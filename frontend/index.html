@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kiwi — Cashback Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --white: #ffffff;
+  --off: #f5f5f3;
+  --border: #c9c9c3;
+  --border-dark: #a8a8a0;
+  --text: #111110;
+  --muted: #77776f;
+  --faint: #bcbcb4;
+  --black: #111110;
+  --red: #c0392b;
+  --green: #1a7a4a;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Figtree', system-ui, sans-serif;
+}
+
+body {
+  background: var(--white);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ── */
+.shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+
+nav {
+  border-right: 1px solid var(--border);
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+  margin-bottom: 28px;
+  padding-left: 10px;
+}
+
+.logo span { color: var(--muted); font-weight: 400; }
+
+nav a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+
+nav a svg { flex-shrink: 0; opacity: 0.6; }
+nav a:hover { background: var(--off); color: var(--text); }
+nav a:hover svg { opacity: 1; }
+nav a.active { background: var(--off); color: var(--text); font-weight: 500; }
+nav a.active svg { opacity: 1; }
+
+main { padding: 40px 48px; max-width: 900px; }
+
+/* ── Page ── */
+.page { display: none; }
+.page.active { display: block; }
+
+.page-header {
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ── Stats row ── */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 32px; }
+.stat { background: var(--white); padding: 20px 22px; }
+.stat-label { font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); font-family: var(--mono); }
+
+/* ── User bar ── */
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.user-bar label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+/* ── Table ── */
+.table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.table-title { padding: 14px 18px; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--off); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--off);
+}
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14.5px;
+  color: var(--text);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--off); }
+.empty { color: var(--muted); text-align: center; padding: 36px; font-size: 13px; }
+
+.mono { font-family: var(--mono); font-size: 12px; }
+.dim { color: var(--muted); }
+
+/* ── Cap progress cards ── */
+.caps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+.cap-card {
+  border: none;
+  border-radius: 14px;
+  padding: 24px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.cap-ring-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+.cap-ring-wrap:hover {
+  transform: translateY(-4px) scale(1.06);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.18));
+}
+.cap-ring-wrap svg { transform: rotate(-90deg); }
+.cap-ring-bg {
+  fill: none;
+  stroke: #d8d8d2;
+  stroke-width: 10;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.13));
+}
+.cap-ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.6s cubic-bezier(.4,0,.2,1), stroke 0.6s ease; }
+.cap-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.cap-ring-earned { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+.cap-ring-cap    { font-size: 11px; color: #a0a09a; font-family: var(--mono); }
+.cap-meta { text-align: center; }
+.cap-mode { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.cap-label { font-size: 11.5px; color: var(--muted); }
+.cap-status { font-size: 11px; color: #dc2626; font-weight: 600; min-height: 14px; text-align: center; }
+
+/* ── Event log ── */
+.event-list { display: flex; flex-direction: column; }
+.event-row { display: flex; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.event-row:last-child { border-bottom: none; }
+.event-row:hover { background: var(--off); }
+.event-type {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--off);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 170px;
+  text-align: center;
+}
+.event-type.evt-success { background: #e8f5ee; color: var(--green); border-color: #b8dfc9; }
+.event-type.evt-fail { background: #fdecea; color: var(--red); border-color: #f5c6c0; }
+.event-type.evt-dup { background: #fef9e7; color: #8a6d00; border-color: #f0e0a0; }
+.event-payload { font-family: var(--mono); font-size: 12.5px; color: var(--muted); flex: 1; word-break: break-word; }
+.event-time { font-size: 12px; color: var(--faint); white-space: nowrap; flex-shrink: 0; }
+
+/* ── Badge ── */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  font-family: var(--mono);
+}
+.badge.success { background: #e8f5ee; color: var(--green); }
+.badge.pending { background: #fef9e7; color: #8a6d00; }
+.badge.failed  { background: #fdecea; color: var(--red); }
+
+.credit { color: var(--green); font-family: var(--mono); }
+.debit  { color: var(--red);   font-family: var(--mono); }
+.cashback { color: var(--green); font-family: var(--mono); font-weight: 500; }
+
+/* ── Form ── */
+.form-block { max-width: 520px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.span-2 { grid-column: span 2; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.field .hint { font-size: 12px; color: var(--faint); margin-top: 4px; }
+
+input, select {
+  width: 100%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 13px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--sans);
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus { border-color: var(--black); }
+input::placeholder { color: var(--faint); }
+select { background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2377776f' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+/* ── Buttons ── */
+.btn {
+  background: var(--text);
+  color: var(--white);
+  border: 1px solid var(--text);
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.btn:hover { background: #000; border-color: #000; }
+.btn:active { background: #333; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn.ghost {
+  background: var(--white);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn.ghost:hover { background: var(--off); border-color: var(--border-dark); }
+.btn-full { width: 100%; }
+
+/* ── Key row ── */
+.key-row { display: flex; gap: 8px; align-items: stretch; }
+.key-row input { flex: 1; font-family: var(--mono); font-size: 12px; }
+
+/* ── Alert ── */
+.alert { display: none; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; }
+.alert.show { display: block; }
+.alert.success { background: #e8f5ee; border: 1px solid #b8dfc9; color: var(--green); }
+.alert.error   { background: #fdecea; border: 1px solid #f5c6c0; color: var(--red); }
+.alert .big { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.alert .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 10px; font-size: 12px; }
+.alert .detail span { color: inherit; opacity: 0.85; }
+.alert .detail strong { opacity: 1; font-family: var(--mono); }
+
+/* ── Spinner ── */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 1.5px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Divider ── */
+hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav>
+    <div class="logo">kiwi <span>/ engine</span></div>
+
+    <a class="active" onclick="show('dashboard', this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+      Dashboard
+    </a>
+    <a onclick="show('payment', this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M1 7h14" stroke="currentColor" stroke-width="1.5"/></svg>
+      Make Payment
+    </a>
+    <a onclick="show('transactions', this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Transactions
+    </a>
+    <a onclick="show('ledger', this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Ledger
+    </a>
+    <a onclick="show('audit', this)">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Audit Log
+    </a>
+  </nav>
+
+  <main>
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Account Overview</div>
+        <div class="page-sub">Credit utilisation and cashback summary</div>
+      </div>
+
+      <div class="user-bar">
+        <label>User ID</label>
+        <input id="uid-input" type="number" value="1" style="width:72px"/>
+        <button class="btn" onclick="loadDashboard()">Load</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Cashback Wallet</div>
+          <div class="stat-value" id="wallet-balance">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Available Credit</div>
+          <div class="stat-value" id="avail-credit">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Limit</div>
+          <div class="stat-value" id="credit-limit">—</div>
+        </div>
+      </div>
+
+      <div class="caps-grid">
+
+        <div class="cap-card">
+          <div class="cap-ring-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="cap-ring-bg" cx="60" cy="60" r="51"/>
+              <circle class="cap-ring-fill" id="cap-fill-upi-scan" cx="60" cy="60" r="51"
+                stroke-dasharray="320.44" stroke-dashoffset="320.44"/>
+            </svg>
+            <div class="cap-ring-center">
+              <span class="cap-ring-earned" id="cap-earned-upi-scan">₹0</span>
+              <span class="cap-ring-cap">/ ₹500</span>
+            </div>
+          </div>
+          <div class="cap-meta">
+            <div class="cap-mode">UPI Scan</div>
+            <div class="cap-label">5% cashback · ₹500 cap</div>
+          </div>
+          <div class="cap-status" id="cap-status-upi-scan"></div>
+        </div>
+
+        <div class="cap-card">
+          <div class="cap-ring-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="cap-ring-bg" cx="60" cy="60" r="51"/>
+              <circle class="cap-ring-fill" id="cap-fill-upi-online" cx="60" cy="60" r="51"
+                stroke-dasharray="320.44" stroke-dashoffset="320.44"/>
+            </svg>
+            <div class="cap-ring-center">
+              <span class="cap-ring-earned" id="cap-earned-upi-online">₹0</span>
+              <span class="cap-ring-cap">/ ₹300</span>
+            </div>
+          </div>
+          <div class="cap-meta">
+            <div class="cap-mode">UPI Online</div>
+            <div class="cap-label">2% cashback · ₹300 cap</div>
+          </div>
+          <div class="cap-status" id="cap-status-upi-online"></div>
+        </div>
+
+        <div class="cap-card">
+          <div class="cap-ring-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="cap-ring-bg" cx="60" cy="60" r="51"/>
+              <circle class="cap-ring-fill" id="cap-fill-online" cx="60" cy="60" r="51"
+                stroke-dasharray="320.44" stroke-dashoffset="320.44"/>
+            </svg>
+            <div class="cap-ring-center">
+              <span class="cap-ring-earned" id="cap-earned-online">₹0</span>
+              <span class="cap-ring-cap">/ ₹200</span>
+            </div>
+          </div>
+          <div class="cap-meta">
+            <div class="cap-mode">Card / Online</div>
+            <div class="cap-label">1.5% cashback · ₹200 cap</div>
+          </div>
+          <div class="cap-status" id="cap-status-online"></div>
+        </div>
+
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-title">Recent Transactions</div>
+        <table>
+          <thead><tr><th>Amount</th><th>Category</th><th>Mode</th><th>Cashback</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="recent-txns"><tr><td colspan="6" class="empty">Load a user above</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payment -->
+    <div id="page-payment" class="page">
+      <div class="page-header">
+        <div class="page-title">Make a Payment</div>
+        <div class="page-sub">Submit a payment against the user's credit limit</div>
+      </div>
+
+      <div class="form-block">
+        <div id="pay-alert" class="alert"></div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>User ID</label>
+            <input id="pay-uid" type="number" value="1"/>
+          </div>
+          <div class="field">
+            <label>Amount (₹)</label>
+            <input id="pay-amount" type="number" placeholder="1000" min="1"/>
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <select id="pay-cat">
+              <option>GROCERY</option><option>FOOD</option><option>FUEL</option>
+              <option>TRAVEL</option><option>SHOPPING</option><option>UTILITIES</option><option>OTHER</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Payment Mode</label>
+            <select id="pay-mode">
+              <option value="UPI_SCAN">UPI Scan — 5% cashback</option>
+              <option value="UPI_ONLINE">UPI Online — 2% cashback</option>
+              <option value="ONLINE">Card / Online — 1.5%</option>
+            </select>
+          </div>
+          <div class="field span-2">
+            <label>Idempotency Key</label>
+            <div class="key-row">
+              <input id="pay-ikey" type="text" placeholder="unique-request-key"/>
+              <button class="btn ghost" onclick="genKey()">Regenerate</button>
+            </div>
+            <span class="hint">Re-submit the same key to test duplicate detection</span>
+          </div>
+          <div class="span-2">
+            <hr/>
+            <button class="btn btn-full" id="pay-btn" onclick="makePayment()">Pay Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div id="page-transactions" class="page">
+      <div class="page-header">
+        <div class="page-title">Transaction History</div>
+        <div class="page-sub">All payments for a user, newest first</div>
+      </div>
+      <div class="user-bar" style="margin-bottom:24px;">
+        <label>User ID</label>
+        <input id="txn-uid" type="number" value="1" style="width:72px"/>
+        <button class="btn" onclick="loadTransactions()">Load</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Amount</th><th>Category</th><th>Mode</th><th>Cashback</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="txn-table"><tr><td colspan="7" class="empty">Load a user above</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ledger -->
+    <div id="page-ledger" class="page">
+      <div class="page-header">
+        <div class="page-title">Ledger Entries</div>
+        <div class="page-sub">Double-entry bookkeeping — balances are derived from these rows, never stored directly</div>
+      </div>
+      <div class="user-bar" style="margin-bottom:24px;">
+        <label>User ID</label>
+        <input id="ledger-uid" type="number" value="1" style="width:72px"/>
+        <button class="btn" onclick="loadLedger()">Load</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Account</th><th>Ref</th><th>Entry</th><th>Amount</th><th>Date</th></tr></thead>
+          <tbody id="ledger-table"><tr><td colspan="6" class="empty">Load a user above</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Audit Log -->
+    <div id="page-audit" class="page">
+      <div class="page-header">
+        <div class="page-title">Audit Event Log</div>
+        <div class="page-sub">Immutable trail of every system event — for debugging without touching the database</div>
+      </div>
+      <div class="user-bar" style="margin-bottom:24px;">
+        <label>User ID</label>
+        <input id="audit-uid" type="number" value="1" style="width:72px"/>
+        <button class="btn" onclick="loadAudit()">Load</button>
+      </div>
+      <div class="table-wrap">
+        <div class="event-list" id="audit-list">
+          <div class="empty">Load a user above</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:8080/api';
+
+function show(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+}
+
+function fmt(n) {
+  if (n == null || n === undefined) return '—';
+  return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function badge(status) {
+  const cls = status === 'SUCCESS' ? 'success' : status === 'PENDING' ? 'pending' : 'failed';
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+
+async function loadDashboard() {
+  const uid = document.getElementById('uid-input').value;
+  const res = await fetch(`${API}/users/${uid}`);
+  if (!res.ok) { alert('User not found'); return; }
+  const d = await res.json();
+  document.getElementById('wallet-balance').textContent = fmt(d.walletBalance);
+  document.getElementById('avail-credit').textContent = fmt(d.availableCredit);
+  document.getElementById('credit-limit').textContent = fmt(d.creditLimit);
+
+  updateCapBar(d.recentTransactions || []);
+
+  const tbody = document.getElementById('recent-txns');
+  if (!d.recentTransactions || d.recentTransactions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No transactions yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.recentTransactions.map(t => `
+    <tr>
+      <td class="mono">${fmt(t.amount)}</td>
+      <td class="dim">${t.category}</td>
+      <td class="dim">${t.paymentMode.replace(/_/g, ' ')}</td>
+      <td class="${t.cashbackEarned > 0 ? 'cashback' : 'dim'}">${t.cashbackEarned > 0 ? fmt(t.cashbackEarned) : '—'}</td>
+      <td>${badge(t.status)}</td>
+      <td class="dim" style="font-size:12px">${fmtDate(t.createdAt)}</td>
+    </tr>`).join('');
+}
+
+const CAP_RULES = [
+  { mode: 'UPI_SCAN',   cap: 500, slug: 'upi-scan'   },
+  { mode: 'UPI_ONLINE', cap: 300, slug: 'upi-online'  },
+  { mode: 'ONLINE',     cap: 200, slug: 'online'      },
+];
+
+// Bright gradient: lime green → bright orange → hot red
+function capColor(pct) {
+  const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  const hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  if (pct <= 50) {
+    const t = pct / 50;
+    // #22c55e (bright green) → #f97316 (bright orange)
+    return hex(lerp(0x22, 0xf9, t), lerp(0xc5, 0x73, t), lerp(0x5e, 0x16, t));
+  } else {
+    const t = (pct - 50) / 50;
+    // #f97316 (bright orange) → #ef4444 (hot red)
+    return hex(lerp(0xf9, 0xef, t), lerp(0x73, 0x44, t), lerp(0x16, 0x44, t));
+  }
+}
+
+function updateCapBar(transactions) {
+  const CIRCUMFERENCE = 320.44; // 2 * PI * 51
+
+  CAP_RULES.forEach(({ mode, cap, slug }) => {
+    const earned = transactions
+      .filter(t => t.paymentMode === mode && t.status === 'SUCCESS')
+      .reduce((sum, t) => sum + Number(t.cashbackEarned || 0), 0);
+
+    const capped = Math.min(earned, cap);
+    const pct = Math.min(100, (capped / cap) * 100);
+    const color = pct === 0 ? '#d8d8d2' : capColor(pct);
+
+    // SVG ring: stroke-dashoffset controls how much of the circle is drawn
+    const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
+    const ring = document.getElementById('cap-fill-' + slug);
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = color;
+
+    // Centre text: show rupees earned, no decimals if it's a round number
+    const earnedDisplay = '\u20b9' + (capped % 1 === 0 ? capped.toFixed(0) : capped.toFixed(2));
+    document.getElementById('cap-earned-' + slug).textContent = earnedDisplay;
+
+    const statusEl = document.getElementById('cap-status-' + slug);
+    statusEl.textContent = pct >= 100 ? 'Cap reached' : '';
+  });
+}
+
+function genKey() {
+  document.getElementById('pay-ikey').value = 'ikey-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+genKey();
+
+async function makePayment() {
+  const btn = document.getElementById('pay-btn');
+  const alertEl = document.getElementById('pay-alert');
+  alertEl.className = 'alert';
+
+  const body = {
+    userId: parseInt(document.getElementById('pay-uid').value),
+    amount: parseFloat(document.getElementById('pay-amount').value),
+    category: document.getElementById('pay-cat').value,
+    paymentMode: document.getElementById('pay-mode').value,
+    idempotencyKey: document.getElementById('pay-ikey').value
+  };
+
+  if (!body.amount || body.amount < 1) {
+    alertEl.className = 'alert error show';
+    alertEl.innerHTML = '<div class="big">Invalid amount</div>Enter an amount of at least ₹1.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Processing…';
+
+  try {
+    const res = await fetch(`${API}/payments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      alertEl.className = 'alert error show';
+      alertEl.innerHTML = `<div class="big">${data.code || 'Error'}</div>${data.message}`;
+    } else {
+      alertEl.className = 'alert success show';
+      alertEl.innerHTML = `
+        <div class="big">${data.idempotencyHit ? 'Duplicate request detected' : 'Payment successful'}</div>
+        <div>${data.message}</div>
+        <div class="detail">
+          <span>Cashback earned <strong>${fmt(data.cashbackEarned)}</strong></span>
+          <span>Wallet balance <strong>${fmt(data.walletBalance)}</strong></span>
+          <span>Available credit <strong>${fmt(data.availableCredit)}</strong></span>
+          <span>Transaction ID <strong>#${data.transactionId}</strong></span>
+        </div>`;
+      if (!data.idempotencyHit) genKey();
+    }
+  } catch (e) {
+    alertEl.className = 'alert error show';
+    alertEl.innerHTML = '<div class="big">Connection error</div>Could not reach the backend. Is Spring Boot running on port 8080?';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Pay Now';
+}
+
+async function loadTransactions() {
+  const uid = document.getElementById('txn-uid').value;
+  const res = await fetch(`${API}/users/${uid}`);
+  if (!res.ok) { alert('User not found'); return; }
+  const d = await res.json();
+  const tbody = document.getElementById('txn-table');
+  if (!d.recentTransactions || d.recentTransactions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No transactions yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.recentTransactions.map(t => `
+    <tr>
+      <td class="mono dim">#${t.id}</td>
+      <td class="mono">${fmt(t.amount)}</td>
+      <td class="dim">${t.category}</td>
+      <td class="dim">${t.paymentMode.replace(/_/g, ' ')}</td>
+      <td class="${t.cashbackEarned > 0 ? 'cashback' : 'dim'}">${t.cashbackEarned > 0 ? fmt(t.cashbackEarned) : '—'}</td>
+      <td>${badge(t.status)}</td>
+      <td class="dim" style="font-size:12px">${fmtDate(t.createdAt)}</td>
+    </tr>`).join('');
+}
+
+async function loadLedger() {
+  const uid = document.getElementById('ledger-uid').value;
+  const res = await fetch(`${API}/payments/ledger/${uid}`);
+  if (!res.ok) { alert('Could not load ledger'); return; }
+  const entries = await res.json();
+  const tbody = document.getElementById('ledger-table');
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No ledger entries yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => `
+    <tr>
+      <td class="mono dim">#${e.id}</td>
+      <td class="dim">${e.accountType.replace(/_/g, ' ')}</td>
+      <td class="mono dim" style="font-size:11px">${e.accountRef}</td>
+      <td><span class="${e.entryType === 'CREDIT' ? 'credit' : 'debit'}">${e.entryType}</span></td>
+      <td class="mono ${e.entryType === 'CREDIT' ? 'credit' : 'debit'}">${fmt(e.amount)}</td>
+      <td class="dim" style="font-size:12px">${fmtDate(e.createdAt)}</td>
+    </tr>`).join('');
+}
+
+function eventClass(type) {
+  if (type === 'PAYMENT_SUCCESS' || type === 'CASHBACK_APPLIED') return 'evt-success';
+  if (type === 'PAYMENT_FAILED' || type === 'LIMIT_INSUFFICIENT') return 'evt-fail';
+  if (type === 'IDEMPOTENCY_HIT') return 'evt-dup';
+  return '';
+}
+
+function prettyPayload(raw) {
+  if (!raw) return '—';
+  try {
+    const obj = JSON.parse(raw);
+    return Object.entries(obj).map(([k, v]) => `${k}: ${v}`).join('  ·  ');
+  } catch {
+    return raw;
+  }
+}
+
+async function loadAudit() {
+  const uid = document.getElementById('audit-uid').value;
+  const res = await fetch(`${API}/payments/audit/${uid}`);
+  if (!res.ok) { alert('Could not load audit log'); return; }
+  const events = await res.json();
+  const list = document.getElementById('audit-list');
+  if (!events.length) {
+    list.innerHTML = '<div class="empty">No events recorded yet</div>';
+    return;
+  }
+  list.innerHTML = events.map(e => `
+    <div class="event-row">
+      <span class="event-type ${eventClass(e.eventType)}">${e.eventType.replace(/_/g, ' ')}</span>
+      <span class="event-payload">${prettyPayload(e.payload)}</span>
+      <span class="event-time">${fmtDate(e.createdAt)}</span>
+    </div>`).join('');
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
