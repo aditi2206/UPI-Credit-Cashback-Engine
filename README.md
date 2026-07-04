@@ -8,70 +8,62 @@ Built to demonstrate the real engineering patterns used by companies like Kiwi (
 
 ## Architecture
 
+Here it is:
+
 ```mermaid
-flowchart TD
-    subgraph API["🌐 API Layer"]
-        A1["POST /payments\nMake a payment"]
-        A2["GET /wallet\nWallet balance"]
-        A3["GET /credit\nAvailable limit"]
-        A4["GET /transactions\nHistory"]
-    end
+classDiagram
+    class User {
+        +Long id
+        +String name
+        +String email
+        +BigDecimal creditLimit
+        +BigDecimal usedCredit
+        +Long version
+        +getAvailableCredit()
+    }
+    class Transaction {
+        +Long id
+        +BigDecimal amount
+        +Category category
+        +PaymentMode paymentMode
+        +TransactionStatus status
+        +BigDecimal cashbackEarned
+        +String idempotencyKey
+        +LocalDateTime createdAt
+    }
+    class LedgerEntry {
+        +Long id
+        +AccountType accountType
+        +String accountRef
+        +EntryType entryType
+        +BigDecimal amount
+        +LocalDateTime createdAt
+    }
+    class CashbackRule {
+        +Long id
+        +Category category
+        +PaymentMode paymentMode
+        +BigDecimal percentage
+        +BigDecimal monthlyCap
+        +LocalDateTime validFrom
+        +LocalDateTime validTo
+        +Boolean isActive
+        +isCurrentlyActive()
+    }
+    class EventLog {
+        +Long id
+        +Long userId
+        +Long transactionId
+        +EventType eventType
+        +String payload
+        +LocalDateTime createdAt
+    }
 
-    subgraph SVC["⚙️ Service Layer"]
-        S1["Payment Service\n1. Check idempotency key\n2. Validate credit limit\n3. Write ledger entries\n4. Update txn status"]
-        S2["Rules Engine\nPicks cashback %"]
-        S3["Cashback Calculator\nApplies monthly cap"]
-    end
-
-    subgraph LEDGER["📒 Double-Entry Ledger"]
-        L1["Ledger Entries\nCASHBACK_POOL → DEBIT ₹50\nUSER_WALLET  → CREDIT ₹50\nCREDIT_LIMIT → DEBIT ₹1000"]
-        L2["Audit Event Log\nPAYMENT_CREATED\nCASHBACK_APPLIED\nLIMIT_UPDATED"]
-    end
-
-    subgraph DB["🗄️ MySQL"]
-        D1[(users)]
-        D2[(transactions)]
-        D3[(ledger_entries)]
-        D4[(cashback_rules)]
-        D5[(event_log)]
-    end
-
-    subgraph CC["🛡️ Cross-Cutting Concerns"]
-        C1["Idempotency\nDedup on key"]
-        C2["Concurrency\nOptimistic locking"]
-        C3["Rate Limiting\nBucket4j"]
-        C4["Observability\nSpring Actuator"]
-    end
-
-    A1 --> S1
-    A2 --> D3
-    A3 --> D1
-    A4 --> D2
-
-    S1 --> S2
-    S2 --> S3
-    S1 --> L1
-    S1 --> L2
-
-    L1 --> D1
-    L1 --> D2
-    L1 --> D3
-    L2 --> D5
-    S2 --> D4
-
-    S1 -.->|guards| C1
-    S1 -.->|uses| C2
-    A1 -.->|throttled by| C3
-    S1 -.->|emits metrics| C4
-
-    style API fill:#EEEDFE,stroke:#534AB7,color:#26215C
-    style SVC fill:#E1F5EE,stroke:#0F6E56,color:#04342C
-    style LEDGER fill:#FAECE7,stroke:#993C1D,color:#4A1B0C
-    style DB fill:#F1EFE8,stroke:#5F5E5A,color:#2C2C2A
-    style CC fill:#E6F1FB,stroke:#185FA5,color:#042C53
+    User "1" --> "*" Transaction : has
+    Transaction "1" --> "*" LedgerEntry : recorded in
+    Transaction "1" --> "*" EventLog : audited by
+    Transaction "*" ..> CashbackRule : uses
 ```
-
----
 
 ## Production-grade Features
 
