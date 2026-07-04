@@ -73,7 +73,6 @@ classDiagram
 | **Monthly cap enforcement** | Queries ledger entries to check how much cashback already earned this month |
 | **Audit event log** | Immutable record of every system event with before/after snapshots |
 | **Rate limiting** | Bucket4j in-memory rate limiter on the payments endpoint (10 req/min) |
-| **Observability** | Spring Actuator exposes `/actuator/metrics`, `/actuator/health` |
 | **Concurrency test** | 50 simultaneous payment threads — proves no lost updates via assertions |
 
 ---
@@ -83,7 +82,6 @@ classDiagram
 - **Backend:** Java 17, Spring Boot 3.2, Spring Data JPA
 - **Database:** MySQL 8
 - **Rate limiting:** Bucket4j
-- **Observability:** Spring Actuator
 - **Frontend:** Vanilla HTML/CSS/JS (demo only)
 - **Containerisation:** Docker + Docker Compose
 
@@ -204,13 +202,6 @@ GET /api/payments/ledger/{userId}
 GET /api/payments/audit/{userId}
 ```
 
-### Health check
-```
-GET /actuator/health
-```
-
----
-
 ## Cashback Rules (seeded on startup)
 
 | Payment Mode | Cashback | Monthly Cap |
@@ -235,7 +226,7 @@ Credit limit deduction requires a read → check → write sequence. Without loc
 UPI payments are retried by clients on network timeouts. Without deduplication, a timeout followed by a retry could double-charge the user. The client sends a unique key per payment intent; the server stores it and returns the original response on duplicates.
 
 ### Why a DB-driven rules engine?
-Hardcoded `if-else` cashback logic means every promotional rate change requires a code deployment. Storing rules in `cashback_rules` with validity windows lets you update rates, launch limited-time promos, and A/B test cashback percentages via a simple DB update.
+Hardcoded `if-else` cashback logic means every promotional rate change requires a code deployment. Storing rules in `cashback_rules` with validity windows lets you update rates and launch limited-time promos
 
 ---
 
