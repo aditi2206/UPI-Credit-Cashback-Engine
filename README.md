@@ -7,8 +7,6 @@ A production-grade backend system simulating the core of a UPI credit card finte
 
 ## Architecture
 
-Here it is:
-
 ```mermaid
 classDiagram
     class User {
