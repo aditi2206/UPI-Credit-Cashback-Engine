@@ -1,8 +1,7 @@
-# Kiwi Credit & Cashback Engine
+# Credit & Cashback Engine
 
 A production-grade backend system simulating the core of a UPI credit card fintech — credit limit management, double-entry ledger accounting, and a configurable cashback rules engine.
 
-Built to demonstrate the real engineering patterns used by companies like Kiwi (gokiwi.in).
 
 ---
 
