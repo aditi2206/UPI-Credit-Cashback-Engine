@@ -13,7 +13,9 @@ A production-grade backend system simulating the core of a UPI credit card finte
   <img src="https://github.com/user-attachments/assets/4ce00df7-b0ae-40a8-807f-9286db712c1d" width="48%">
   <img src="https://github.com/user-attachments/assets/145c55c9-dded-4ca6-90aa-fc1505258eef" width="48%">
 </p>
-
+<p align="center">
+  <img width="956" height="509" alt="Screenshot 2026-07-06 125154" src="https://github.com/user-attachments/assets/08c81f5a-5243-443e-9aa4-11b0ab903137" />
+</p>
 
 
 
