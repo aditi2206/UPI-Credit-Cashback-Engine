@@ -4,6 +4,24 @@ A production-grade backend system simulating the core of a UPI credit card finte
 
 
 ---
+<p align="center">
+  <img src="<img width="956" height="506" alt="Screenshot 2026-07-06 124935" src="https://github.com/user-attachments/assets/138d8e05-8b24-4e77-ac28-42a0bac2e6dc" />
+" width="48%">
+  <img src="<img width="956" height="470" alt="Screenshot 2026-07-06 125014" src="https://github.com/user-attachments/assets/89c71791-1788-4dab-89f5-0ec32c6ca5c4" />
+" width="48%">
+</p>
+
+<p align="center">
+  <img src="<img width="952" height="500" alt="Screenshot 2026-07-06 125045" src="https://github.com/user-attachments/assets/4ce00df7-b0ae-40a8-807f-9286db712c1d" />
+" width="48%">
+  <img src="<img width="950" height="500" alt="Screenshot 2026-07-06 125136" src="https://github.com/user-attachments/assets/145c55c9-dded-4ca6-90aa-fc1505258eef" />
+" width="48%">
+</p>
+
+
+
+
+
 
 ## Architecture
 
